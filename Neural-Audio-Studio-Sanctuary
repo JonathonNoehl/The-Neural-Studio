@@ -1,0 +1,235 @@
+import numpy as np
+
+def verify_and_register_user(registration_payload):
+    expected_fields = ["phone_number", "first_name", "last_name", "home_address", "email_address", "preferred_genre"]
+    for field in expected_fields:
+        if field not in registration_payload or not registration_payload[field]:
+            return {"status": "error", "message": f"Missing field: {field}"}
+
+    phone = str(registration_payload["phone_number"]).strip()
+    if len(phone) != 10 or not phone.isdigit():
+        return {"status": "error", "message": "Invalid 10-digit phone number"}
+
+    user_profile = {
+        "phone_number": phone,
+        "first_name": registration_payload["first_name"].strip(),
+        "last_name": registration_payload["last_name"].strip(),
+        "home_address": registration_payload["home_address"].strip(),
+        "email_address": registration_payload["email_address"].strip(),
+        "preferred_genre": registration_payload["preferred_genre"].strip(),
+        "token_balance": 5
+    }
+    return {"status": "success", "profile": user_profile}
+def reward_user_from_ad(user_profile, ad_reward_tokens=2):
+    """
+    Rewards the user with tokens for completing an advertisement view.
+    Balances out production costs during early prototype testing.
+    """
+    current_balance = user_profile.get("token_balance", 0)
+    user_profile["token_balance"] = current_balance + ad_reward_tokens
+    
+    return {
+        "status": "success",
+        "message": f"Ad reward processed. Added {ad_reward_tokens} tokens.",
+        "updated_balance": user_profile["token_balance"]
+    }
+
+def complete_transaction_and_download(user_profile, track_cost_coins=3, successful_tracks_count=1):
+    """
+    Manages token deduction for generating and downloading integration tracks.
+    Cost is scaled to incentivize watching 1-2 ads per track generated.
+    """
+    current_balance = user_profile.get("token_balance", 0)
+    total_cost = track_cost_coins * successful_tracks_count
+
+    if current_balance < total_cost:
+        return {
+            "status": "insufficient_funds",
+            "message": f"Required: {total_cost} tokens. Available: {current_balance} tokens.",
+            "action_required": "Prompt user to watch an advertisement to earn tokens."
+        }
+
+    # Deduct tokens for the track generation
+    new_balance = current_balance - total_cost
+    user_profile["token_balance"] = new_balance
+
+    # Pull staged asset from the infrastructure layer
+    blob_storage_uri = "https://windows.net"
+
+    return {
+        "status": "success",
+        "message": f"Transaction complete. Compiled {successful_tracks_count} track(s).",
+        "tokens_deducted": total_cost,
+        "updated_balance": new_balance,
+        "download_url": blob_storage_uri
+    }
+
+def process_user_track_upload(audio_data, max_duration=180, sample_rate=44100):
+    max_samples = max_duration * sample_rate
+    if len(audio_data) > max_samples:
+        audio_data = audio_data[:max_samples]
+
+    max_val = np.max(np.abs(audio_data))
+    if max_val > 0:
+        audio_data = audio_data / max_val
+
+    return audio_data
+
+def get_frequency_wave_shift(wave_type="alpha"):
+    wave_shifts = {
+        "delta": 2.5,
+        "theta": 6.0,
+        "alpha": 10.5,
+        "beta": 14.5,
+        "gamma": 40.0
+    }
+    return wave_shifts.get(wave_type.lower(), 10.5)
+
+def generate_binaural_layer(wave_type="alpha", duration_seconds=180, sample_rate=44100):
+    beat_freq = get_frequency_wave_shift(wave_type)
+    carrier_freq = 300.0
+
+    left_freq = carrier_freq - (beat_freq / 2)
+    right_freq = carrier_freq + (beat_freq / 2)
+
+    t = np.linspace(0, duration_seconds, int(sample_rate * duration_seconds), endpoint=False)
+
+    left_channel = np.sin(2 * np.pi * left_freq * t)
+    right_channel = np.sin(2 * np.pi * right_freq * t)
+
+    binaural_matrix = np.vstack((left_channel, right_channel)).T
+    return binaural_matrix
+
+def process_user_voice_recording(recorded_audio_data, target_duration_seconds=180, sample_rate=44100):
+    max_samples = target_duration_seconds * sample_rate
+    if len(recorded_audio_data) > max_samples:
+        recorded_audio_data = recorded_audio_data[:max_samples]
+
+    max_val = np.max(np.abs(recorded_audio_data))
+    if max_val > 0:
+        recorded_audio_data = recorded_audio_data / max_val
+
+    return recorded_audio_data
+
+def get_onboarding_instructions():
+    instructions = {
+        "header": "!!ATTENTION !! & IMPORTANT",
+        "voice_recording": "Please find a completely quiet room. Speak in a normal, relaxed tone and maintain a steady pace. Keep your positive energy reinforcing message simple and clear. This ensures your subconscious mind can clearly interpret and absorb the directives.",
+        "text_input": "Type or copy-paste your positive reinforcing message here. Remember, simple is best. Clear, direct messages and directives are much easier for the subconscious brain to track and integrate."
+    }
+    return instructions
+
+def get_ai_voice_options():
+    voice_catalog = {
+        "en-US-Ava": {
+            "name": "Ava",
+            "style": "Neural HD v3 Natural Conversational",
+            "tone": "Warm, encouraging, and soothing",
+            "intro_audio_uri": "https://www.google.com/url?q=https://mystorage.blob.core.windows.net/voice-intros/ava_intro.wav&source=gmail&ust=1789680611555000&sa=E",
+            "transcript": "Hello, I am Ava. I will deliver your positive reinforcement directives with a gentle, steady presence to help your subconscious focus completely."
+        },
+        "en-US-Andrew": {
+            "name": "Andrew",
+            "style": "Neural HD v3 Natural Conversational",
+            "tone": "Grounding, calm, and professional",
+            "intro_audio_uri": "https://www.google.com/url?q=https://mystorage.blob.core.windows.net/voice-intros/andrew_intro.wav&source=gmail&ust=1789680611555000&sa=E",
+            "transcript": "Hello, I am Andrew. I am here to articulate your affirmations clearly and precisely, ensuring an optimal foundation for your mental conditioning."
+        },
+        "en-US-Emma": {
+            "name": "Emma",
+            "style": "Neural HD v3 Expressive Bright",
+            "tone": "Vibrant, uplifting, and clear",
+            "intro_audio_uri": "https://www.google.com/url?q=https://mystorage.blob.core.windows.net/voice-intros/emma_intro.wav&source=gmail&ust=1789680611555000&sa=E",
+            "transcript": "Hello, I am Emma. I will voice your chosen directives with positive, radiant clarity, keeping your mind aligned with your peak intentions."
+        }
+    }
+    return voice_catalog
+
+def handle_voice_recording_fork(attempt_number, raw_audio_data):
+    if attempt_number >= 3:
+        final_processed_layer = process_user_voice_recording(raw_audio_data)
+        return {"status": "auto_commit", "message": "Maximum of 3 attempts reached. Layer automatically constituted to preserve resources.", "audio": final_processed_layer}
+
+    processed_attempt = process_user_voice_recording(raw_audio_data)
+    return {"status": "review", "message": f"Attempt {attempt_number} processed. Please review before confirmation.", "audio": processed_attempt}
+
+def handle_text_tts_fork(user_selection_key, user_text_payload):
+    catalog = get_ai_voice_options()
+    if user_selection_key not in catalog:
+        return {"status": "error", "message": "Selected voice profile is unavailable."}
+
+    selected_voice = catalog[user_selection_key]
+
+    simulated_tts_audio = np.random.normal(0, 0.01, 44100 * 30)
+    max_val = np.max(np.abs(simulated_tts_audio))
+    if max_val > 0:
+        simulated_tts_audio = simulated_tts_audio / max_val
+
+    return {
+        "status": "review",
+        "voice_used": selected_voice["name"],
+        "tone_applied": selected_voice["tone"],
+        "message": f"Text-to-speech layer generated successfully using {selected_voice['name']} Neural HD infrastructure. Please review before confirmation.",
+        "audio": simulated_tts_audio
+    }
+
+def process_and_stage_subconscious_layer(subconscious_audio, wave_type="alpha", sample_rate=44100):
+    beat_freq = get_frequency_wave_shift(wave_type)
+    carrier_freq = 300.0
+    duration_seconds = len(subconscious_audio) / sample_rate
+
+    t = np.linspace(0, duration_seconds, int(sample_rate * duration_seconds), endpoint=False)
+    modulator = np.sin(2 * np.pi * (carrier_freq + beat_freq) * t)
+
+    modulated_subconscious = subconscious_audio * modulator
+    max_val = np.max(np.abs(modulated_subconscious))
+    if max_val > 0:
+        modulated_subconscious = modulated_subconscious / max_val
+
+    blob_storage_uri = "https://www.google.com/url?q=https://mystorage.blob.core.windows.net/staged-layers/subconscious_temp.raw&source=gmail&ust=1789680611555000&sa=E"
+    return {"status": "staged", "blob_uri": blob_storage_uri, "data_shape": modulated_subconscious.shape}
+
+def generate_integration_sample(user_track, subconscious_layer_data, wave_type="alpha", sample_rate=44100, mix_ratio=0.15):
+    duration_seconds = min(len(user_track) / sample_rate, 180)
+
+    if len(user_track.shape) == 1:
+        user_stereo = np.vstack((user_track, user_track)).T
+    else:
+        user_stereo = user_track
+
+    if len(subconscious_layer_data.shape) == 1:
+        subconscious_stereo = np.vstack((subconscious_layer_data, subconscious_layer_data)).T
+    else:
+        subconscious_stereo = subconscious_layer_data
+
+    if len(subconscious_stereo) < len(user_stereo):
+        pad_len = len(user_stereo) - len(subconscious_stereo)
+        subconscious_stereo = np.pad(subconscious_stereo, ((0, pad_len), (0, 0)), mode='constant')
+    else:
+        subconscious_stereo = subconscious_stereo[:len(user_stereo)]
+
+    mixed_track = (user_stereo * (1.0 - mix_ratio)) + (subconscious_stereo * mix_ratio)
+
+    max_val = np.max(np.abs(mixed_track))
+    if max_val > 0:
+        mixed_track = mixed_track / max_val
+
+    self_check_passed = True
+    if np.isnan(mixed_track).any() or np.isinf(mixed_track).any():
+        self_check_passed = False
+
+    sample_preview = mixed_track[:int(sample_rate * 15)]
+
+    integration_package = {
+        "self_check_passed": self_check_passed,
+        "preview_data": sample_preview,
+        "full_output_track": mixed_track,
+        "audible_binaural_issue": "If the humming frequency or voice layer is completely overpowering or separates distinctly, lower the mix ratio parameter below 0.1.",
+        "poor_quality_issue": "If you experience clipping, popping, or low volume, verify your uploaded track file bitrate matches 44100Hz and possesses clean peak dynamics."
+    }
+
+    return integration_package
+
+def complete_transaction_and_download(user_profile, track_cost_coins=1, successful_tracks_count=1):
+    current_balance = user_profile.get("token_balance", 0)
+    # Note: Your snippet cut off here mid-line.
