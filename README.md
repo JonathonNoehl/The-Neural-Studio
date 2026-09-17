@@ -1,4 +1,4 @@
-Neural Studio: Medical-Grade Auditory Neuromodulation
+The Neural Studio: Medical-Grade Auditory Neuromodulation
 
 Technical Documentation & Architectural Specifications
     
